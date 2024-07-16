@@ -171,4 +171,4 @@ Displays the help message.
 
 ## License
 
-This project is licensed under the GPLv3 License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GPLv3 License for non-commercial use, for commercial use, please see https://scadasolve.com/case/licensing for details. See the [LICENSE](LICENSE) file for details.
