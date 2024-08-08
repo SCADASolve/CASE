@@ -14,7 +14,7 @@ complete GPL v3 terms are included in Section 2.
 2. If you want to have a commercial advantage by having a closed source 
 solution, you must purchase an appropriate commercial licenses from 
 SCADA Solve LLC. By purchasing a commercial license, you are no longer 
-obligated to publish your source code. You can use Case with the 
+obligated to publish your source code. You can use CASE with the 
 commercial license terms listed in Section 3.
 
 ========================================================================
@@ -138,7 +138,7 @@ for making modifications to it.  "Object code" means any non-source
 form of a work.
 
   A "Standard Interface" means an interface that either is an official
-standard defined by a recognized standards body, or, in the case of
+standard defined by a recognized standards body, or, in the CASE of
 interfaces specified for a particular programming language, one that
 is widely used among developers working in that language.
 
@@ -320,7 +320,7 @@ included in conveying the object code work.
 tangible personal property which is normally used for personal, family,
 or household purposes, or (2) anything designed or sold for incorporation
 into a dwelling.  In determining whether a product is a consumer product,
-doubtful cases shall be resolved in favor of coverage.  For a particular
+doubtful CASEs shall be resolved in favor of coverage.  For a particular
 product received by a particular user, "normally used" refers to a
 typical or common use of that class of product, regardless of the status
 of the particular user or of the way in which the particular user
@@ -334,7 +334,7 @@ procedures, authorization keys, or other information required to install
 and execute modified versions of a covered work in that User Product from
 a modified version of its Corresponding Source.  The information must
 suffice to ensure that the continued functioning of the modified object
-code is in no case prevented or interfered with solely because
+code is in no CASE prevented or interfered with solely because
 modification has been made.
 
   If you convey an object code work under this section in, or with, or
@@ -376,7 +376,7 @@ this License without regard to the additional permissions.
   When you convey a copy of a covered work, you may at your option
 remove any additional permissions from that copy, or from any part of
 it.  (Additional permissions may be written to require their own
-removal in certain cases when you modify the work.)  You may place
+removal in certain CASEs when you modify the work.)  You may place
 additional permissions on material, added by you to a covered work,
 for which you have or can give appropriate copyright permission.
 
@@ -728,7 +728,7 @@ Subject to the payment of the fee required for a Commercial Developer License an
 (i) for up to one hundred (100) developers within Your organization to install and use the Software on any workstations used exclusively by such developers and 
 (ii) for You to install and use the Software in unlimited clients, solely in connection with distribution of the Software in accordance with sections 3 and 4 below. This license is not sub-licensable except as explicitly set forth herein.
 
-License a), b) or c) only cover the usage on the source and binary part implemented by SCADA Solve LLC, and do not cover any non-Case implemented library. The EMGU CV package utilized by Case, which includes OpenCV features, is subject to the following licenses:
+License a), b) or c) only cover the usage on the source and binary part implemented by SCADA Solve LLC, and do not cover any non-CASE implemented library. The EMGU CV package utilized by CASE, which includes OpenCV features, is subject to the following licenses:
 
 	- OpenCV 4.5.0 and newer releases are covered by the Apache 2.0 license.
 	- OpenCV 4.4.0 and prior releases are covered by the BSD license.
