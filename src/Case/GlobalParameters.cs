@@ -40,6 +40,7 @@ namespace Case
                 "StorageMethod",
                 "FlatFilePath",
                 "ImageStorageDirectory",
+                "ModelRepository",
                 "DisplayAscii",
                 "InterfacingStructure",
                 "RPAStorageStructure",
@@ -51,6 +52,18 @@ namespace Case
                 "ConversationalTrainingModelData",
                 "AnalysisTrainingModel",
                 "AnalysisTrainingModelData",
+                "AI.ReceivedTokens",
+                "AI.GPULayers",
+                "AI.MaxTokensSent",
+                "AI.Temperature",
+                "AI.Top_K",
+                "AI.Top_P",
+                "AI.Min_P",
+                "AI.Penalty",
+                "AI.Repeat_Last_N",
+                "AI.ConsumptionBatch",
+                "AI.ShowLoadTimes",
+                "AI.SimulateTyping",
                 "CaseStable",
                 "BypassLLM"
             };
@@ -64,7 +77,8 @@ namespace Case
                 AppDomain.CurrentDomain.BaseDirectory,
                 "FlatFile",
                 AppDomain.CurrentDomain.BaseDirectory,
-                AppDomain.CurrentDomain.BaseDirectory + "\\find\\",
+                AppDomain.CurrentDomain.BaseDirectory + "find\\",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData","Local","nomic.ai","GPT4All"),
                 "True",
                 @"\Conversations\:[Username],[Message],[Screen],[DT],[Receiver],[Submitted],[WaitingOnResponse],[Answered],[ActionPerformed],[TimeToProcess],[CommandsActivated],[id]",
                 @"\RPA\:[Command],[codeToExecute],[Software],[LastUsed],[Dynamic]",
@@ -72,10 +86,22 @@ namespace Case
                 @"\Monitoring_Queue\:[Datapoint],[startTime],[endTime],[Parameter],[AlarmValue],[RPA]",
                 @"\CaseSessions\:[session],[startDT],[endDT],[username]",
                 "",
-                AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "\\\\") + @"\\initCaseTemplate.py",
-                AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "\\\\") + @"\\initCase.Conversational.txt",
-                AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "\\\\") + @"\\initAnalysisTemplate.py",
-                AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "\\\\") + @"\\initCase.Analysis.Empty.txt",
+                AppDomain.CurrentDomain.BaseDirectory + @"initCaseTemplate.py",
+                AppDomain.CurrentDomain.BaseDirectory + @"initCase.Conversational.txt",
+                AppDomain.CurrentDomain.BaseDirectory + @"initAnalysisTemplate.py",
+                AppDomain.CurrentDomain.BaseDirectory + @"initCase.Analysis.Empty.txt",
+                "2048",
+                "100",
+                "4096",
+                "0.7",
+                "40",
+                "0.4",
+                "0.0",
+                "1.18",
+                "64",
+                "128",
+                "True",
+                "True",
                 "False",
                 "False"
             };
@@ -220,6 +246,9 @@ namespace Case
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading settings file: {ex.Message}");
+                Console.WriteLine("Please ensure CASE is running in Administrative Mode.");
+                Console.ReadLine();
+                Environment.Exit(0);
             }
         }
 
@@ -229,12 +258,99 @@ namespace Case
         /// <param name="key">The setting key to validate.</param>
         /// <param name="value">The setting value to validate.</param>
         /// <returns>True if the setting is valid; otherwise, false.</returns>
+        /// 
+
+                //        "AI.ReceivedTokens",
+                //"AI.GPULayers",
+                //"AI.MaxTokensSent",
+                //"AI.Temperature",
+                //"AI.Top_K",
+                //"AI.Top_P",
+                //"AI.Min_P",
+                //"AI.Penalty",
+                //"AI.Repeat_Last_N",
+                //"AI.ConsumptionBatch",
+                //"AI.ShowLoadTimes",
+                //"AI.SimulateTyping"
+
         private bool ValidateSetting(string key, string value)
         {
             try
             {
                 switch (key)
                 {
+                    case "AI.ReceivedTokens":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.ReceivedTokens must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.GPULayers":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.GPULayers must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.MaxTokensSent":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.MaxTokensSent must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.Temperature":
+                        if (!double.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Temperature must be a floating-point value.");
+                        }
+                        return true;
+                    case "AI.Top_K":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Top_K must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.Top_P":
+                        if (!double.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Top_P must be a floating-point value.");
+                        }
+                        return true;
+                    case "AI.Min_P":
+                        if (!double.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Min_P must be a floating-point value.");
+                        }
+                        return true;
+                    case "AI.Penalty":
+                        if (!double.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Penalty must be a floating-point value.");
+                        }
+                        return true;
+                    case "AI.Repeat_Last_N":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.Repeat_Last_N must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.ConsumptionBatch":
+                        if (!int.TryParse(value, out _))
+                        {
+                            throw new ArgumentException("AI.ConsumptionBatch must be a numeric value.");
+                        }
+                        return true;
+                    case "AI.ShowLoadTimes":
+                        if (!validBooleanValues.Contains(value))
+                        {
+                            throw new ArgumentException("AI.ShowLoadTimes must be 'True' or 'False'.");
+                        }
+                        return true;
+                    case "AI.SimulateTyping":
+                        if (!validBooleanValues.Contains(value))
+                        {
+                            throw new ArgumentException("AI.SimulateTyping must be 'True' or 'False'.");
+                        }
+                        return true;
                     case "BypassLLM":
                         if (!validBooleanValues.Contains(value))
                         {

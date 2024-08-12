@@ -47,7 +47,7 @@ namespace Case
                 return;
             }
 
-            if (!File.Exists("Settings.config"))
+            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "Settings.config"))
             {
                 gp.loadSettingsFile();
                 string res = InitialSetup(); 
@@ -86,7 +86,9 @@ namespace Case
 
             if (args.Length == 0)
             {
-                displayCaseAscii();
+                string val = gp.getSetting("DisplayAscii");
+                if (val == "True")
+                    displayCaseAscii();
                 while (true)
                 {
                     Console.Write("> ");
@@ -871,6 +873,21 @@ namespace Case
                                     }
                                     break;
 
+                                case "-ai":
+                                    if (!settingsUnlocked && SecurityManager.IsPasswordConfigured())
+                                    {
+                                        Console.WriteLine("Settings are locked. Use '-settings -unlock' to unlock.");
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        runLLM rl = new runLLM();
+                                        rl.AI_UnderTheHood();
+                                        dm.distributeCaseLogs(currentSession, Environment.UserName + " went through the AI reconfiguration procedure.");
+                                        dm.updateCaseSessions(currentSession);
+                                    }
+                                    break;
+
                                 default:
                                     Console.WriteLine($"Unknown settings sub-command: {subCommand}");
                                     DisplayHelp();
@@ -885,7 +902,7 @@ namespace Case
                         break;
 
                     case "-resetSettings":
-                        File.Delete("Settings.config");
+                        File.Delete(AppDomain.CurrentDomain.BaseDirectory + "Settings.config");
                         Console.WriteLine("Settings deleted, re-open Case.");
                         Console.ReadLine();
                         return;
@@ -991,7 +1008,7 @@ namespace Case
             Console.WriteLine();
             */
             //LLM Capabilities...
-            if (gp.getSetting("BypassLLM") == "True")
+            if (gp.getSetting("BypassLLM") == "False")
             { 
                 Console.WriteLine("-talk");
                 Console.WriteLine("    Starts the Conversational Generative AI agent.");
@@ -999,7 +1016,7 @@ namespace Case
                 Console.WriteLine();
 
                 Console.WriteLine("-analyze <type> <data> <prompt>");
-                Console.WriteLine("    Analyzes the specified data.");
+                Console.WriteLine("    Starts a Conversational Generative AI agent, populates template files and analyzes the specified data in the request.");
                 Console.WriteLine("    Types:");
                 Console.WriteLine("        -file");
                 Console.WriteLine("            Example: -analyze -file \"path/to/file.txt\" \"analyze this file\"");
@@ -1035,6 +1052,9 @@ namespace Case
             Console.WriteLine("        -gpu");
             Console.WriteLine("            Lists and allows a user to select a GPU to use in the Generative AI configuration files.");
             Console.WriteLine("            Example: -settings -gpu");
+            Console.WriteLine("        -ai");
+            Console.WriteLine("            Lists and allows a user to reconfigure multiple properties utilized by the Generative AI configuration files.");
+            Console.WriteLine("            Example: -settings -ai");
             Console.WriteLine();
             
             Console.WriteLine("-resetSettings");
@@ -1048,7 +1068,7 @@ namespace Case
             Console.WriteLine();
 
             Console.WriteLine("---------------------------------------------------");
-            Console.WriteLine("For further details on each command, refer to the application documentation.");
+            Console.WriteLine("For further details on each command, you can view CASE's source code @ https://github.com/SCADASolve/CASE.");
         }
 
         /// <summary>
@@ -1161,7 +1181,7 @@ namespace Case
                 cacheLocation = Console.ReadLine().Trim();
                 if (string.IsNullOrEmpty(cacheLocation))
                 {
-                    cacheLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache", "gpt4all"); // Default location
+                    cacheLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData","Local","nomic.ai","GPT4All"); // Default location
                 }
 
                 // Check for GPT4All install
@@ -1171,6 +1191,9 @@ namespace Case
                     return result;
                 }
 
+                runLLM rl = new runLLM();
+                rl.AI_UnderTheHood();
+
                 // Suggest available models to use
                 model = SuggestAvailableModels(cacheLocation);
                 if (string.IsNullOrEmpty(model))
@@ -1178,22 +1201,7 @@ namespace Case
                     result = "Setup Failed: No models found in cache. Please place the models in .cache/gpt4all and try again.";
                     return result;
                 }
-
-                // Ask for GPU setting
-                getGPUs();
-
-                // Ask for CPU Thread count
-                Console.WriteLine("Enter the CPU thread count for model processing (default is 100):");
-                string threadCountInput = Console.ReadLine().Trim();
-                
-                try 
-                { 
-                    threadCount = string.IsNullOrEmpty(threadCountInput) ? 100 : int.Parse(threadCountInput);
-                }
-                catch (Exception e)
-                {
-                    result = "Setup Failed: CPU thread count not an integer.";
-                }
+                gp.updateSettingsFile("BypassLLM", "False");
             }
             else
             {
@@ -1203,7 +1211,7 @@ namespace Case
             // Ask for FlatFile or DB
             Console.WriteLine("Enter storage method (default is 'FlatFile', type 'Database' for SQL):");
             string storageMethod = Console.ReadLine().Trim();
-            while (storageMethod != "FlatFile" && storageMethod != "Database")
+            while (storageMethod != "FlatFile" && storageMethod != "Database" && storageMethod != "")
             {
                 storageMethod = Console.ReadLine().Trim();
                 Console.WriteLine("Try again please.");
@@ -1255,11 +1263,11 @@ namespace Case
             // Ask for the findables directory
             Console.WriteLine("Enter the directory where findable images will be stored:");
             Console.WriteLine("These are for image detection used in the RPA functions.");
-            Console.WriteLine("Press Enter to default to the application directory (" + AppDomain.CurrentDomain.BaseDirectory + "\\find\\)");
+            Console.WriteLine("Press Enter to default to the application directory (" + AppDomain.CurrentDomain.BaseDirectory + "find\\)");
             string findablesDirectory = Console.ReadLine().Trim();
             if (findablesDirectory.Length == 0)
             {
-                findablesDirectory = AppDomain.CurrentDomain.BaseDirectory + "\\find\\";
+                findablesDirectory = AppDomain.CurrentDomain.BaseDirectory + "find\\";
                 Directory.CreateDirectory(findablesDirectory);
             }
             gp.updateSettingsFile("ImageStorageDirectory", findablesDirectory);    
@@ -1272,7 +1280,7 @@ namespace Case
             }
             else
             {
-                SaveSettings(hostFileLocation, cacheLocation, model, storageMethod, findablesDirectory, threadCount);
+                SaveSettings(hostFileLocation, cacheLocation.Replace("\\", "\\\\"), model, storageMethod, findablesDirectory, threadCount);
                 Console.WriteLine("Setup successful.");
                 dm.distributeCaseLogs(currentSession, Environment.UserName + " went through the initial setup procedure.");
                 dm.updateCaseSessions(currentSession);
@@ -1326,7 +1334,7 @@ namespace Case
             if (!cacheLocation.ToLower().Contains("gpt4all"))
                 models = Directory.GetFiles(cacheLocation + "\\gpt4all");
             else
-                models = Directory.GetFiles(cacheLocation);
+                models = Directory.GetFiles(cacheLocation, "*.gguf");
             if (models.Length == 0)
             {
                 return null;
@@ -1402,7 +1410,7 @@ namespace Case
         static void SaveSettings(string hostFileLocation, string cacheLocation, string model, string storageMethod, string findablesDirectory, int threadCount)
         {
             gp.updateSettingsFile("HostFileLocation", hostFileLocation);
-            gp.updateSettingsFile("CacheLocation", cacheLocation);
+            gp.updateSettingsFile("ModelRepository", cacheLocation);
             gp.updateSettingsFile("Model", model);
             gp.updateSettingsFile("StorageMethod", storageMethod);
             gp.updateSettingsFile("FindablesDirectory", findablesDirectory);
@@ -1413,7 +1421,7 @@ namespace Case
         /// </summary>
         public static void displaySettings()
         {
-            string filePath = "Settings.config";
+            string filePath = AppDomain.CurrentDomain.BaseDirectory + "Settings.config";
             if (!File.Exists(filePath))
             {
                 Console.WriteLine("Settings.config file not found.");
@@ -1471,8 +1479,8 @@ namespace Case
 
             if (gpus.Count == 0)
             {
-                Console.WriteLine("No GPUs found. Setting GPU to 'NOGPU'.");
-                gp.updateSettingsFile("GPU", "NOGPU");
+                Console.WriteLine("No GPUs found. Setting GPU to '', WARNING: This will use your CPU, and will take longer to load.");
+                gp.updateSettingsFile("GPU", "");
             }
             else
             {
@@ -1486,8 +1494,8 @@ namespace Case
                 }
                 else
                 {
-                    Console.WriteLine("Invalid selection. Setting GPU to 'NOGPU'.");
-                    gp.updateSettingsFile("GPU", "NOGPU");
+                    Console.WriteLine("No GPUs found. Setting GPU to '', WARNING: This will use your CPU, and will take longer to load.");
+                    gp.updateSettingsFile("GPU", "");
                 }
             }
         }

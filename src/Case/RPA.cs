@@ -37,7 +37,7 @@ namespace Case
         private static int spacing = 500;
         [DllImport("user32.dll")]
         protected static extern IntPtr SetClipboardViewer(IntPtr hWndNewViewer);
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]  
         public static extern bool ChangeClipboardChain(IntPtr hWndRemove, IntPtr hWndNewNext);
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern int SendMessage(IntPtr hwnd, int wMsg, IntPtr wParam, IntPtr lParam);
@@ -282,7 +282,7 @@ namespace Case
                     else if (cmd == "z")
                     {
                         DistributionManager dm = new DistributionManager();
-                        string commandCode = dm.collectRPACommands(wholeExecutionString);
+                        string commandCode = dm.collectRPACommands(wholeExecutionString.Substring(1, wholeExecutionString.Length-1));
                         if (string.IsNullOrEmpty(commandCode))
                         {
                             return $"Error at command {se + 1}: '{cmd}' does not exist in the command storage structure.";

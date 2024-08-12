@@ -51,7 +51,7 @@ namespace Case
 
                 ProcessStartInfo psi = new ProcessStartInfo("python.exe")
                 {
-                    Arguments = llmConfiguration,
+                    Arguments = "\"" + llmConfiguration + "\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardInput = true,
@@ -65,11 +65,19 @@ namespace Case
 
                 Console.WriteLine("Loading model into memory...");
                 string processingData = ReadInitialOutputs(pythonProcess);
-
+                if (processingData.Contains("Error:"))
+                {
+                    Console.WriteLine("Error found in python while loading model");
+                    Console.WriteLine();
+                    Console.WriteLine(processingData.Replace("Error:", ""));
+                    Console.WriteLine();
+                    Console.WriteLine("Exiting Conversational Agent...");
+                    return;
+                }    
                 DistributionManager DM = new DistributionManager();
                 DM.distributeInitLogs(processingData, method);
 
-                Console.WriteLine("Model Loaded, entering into discussion with Case.");
+                Console.WriteLine("Model Loaded, entering into discussion with a generative AI.");
                 Console.WriteLine("Type 'exit' to quit at any time.");
                 if (method == "Conversational")
                 {
@@ -90,12 +98,25 @@ namespace Case
 
                         // Read response from the Python process
                         List<string> response = ReadFileResponse(pythonProcess);
-                        foreach (string s in response)
+
+                        GlobalParameters gPA = new GlobalParameters();
+                        string simTyping = gPA.getSetting("AI.SimulateTyping");
+                        if (simTyping == "True")
                         {
-                            foreach (char c in s)
+                            foreach (string s in response)
                             {
-                                Console.Write(c);
-                                Thread.Sleep(10);
+                                foreach (char c in s)
+                                {
+                                    Console.Write(c);
+                                    Thread.Sleep(10);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (string s in response)
+                            {
+                                Console.Write(s);
                             }
                         }
                         Console.WriteLine();
@@ -104,7 +125,7 @@ namespace Case
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error initializing case: {ex.Message}");
+                Console.WriteLine($"Error initializing CASE: {ex.Message}");
             }
         }
 
@@ -237,7 +258,7 @@ namespace Case
 
                 ProcessStartInfo psi = new ProcessStartInfo("python.exe")
                 {
-                    Arguments = temporaryFile,
+                    Arguments = "\"" + temporaryFile + "\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardInput = true,
@@ -288,7 +309,7 @@ namespace Case
                         foreach (string s in response)
                             Console.WriteLine(s);
 
-                        DM.distributeCaseLogs(currentSession, "Case Response: " + string.Join(" ", response));
+                        DM.distributeCaseLogs(currentSession, "CASE Response: " + string.Join(" ", response));
                     }
                 }
             }
@@ -357,17 +378,46 @@ namespace Case
                 string trainingPath = gPA.getSetting("AnalysisTrainingModelData");
                 string pythonTemplatePath = gPA.getSetting("AnalysisTrainingModel");
                 string pythonScript = File.ReadAllText(pythonTemplatePath);
-                pythonScript = pythonScript.Replace("{model}", model);
-                pythonScript = pythonScript.Replace("{threads}", threads);
-                if (string.IsNullOrEmpty(GPU))
+                string cachepath = gPA.getSetting("ModelRepository");
+                pythonScript = pythonScript.Replace("{model}", cachepath.Replace("\\", "\\\\") + "\\\\" + model); //.Replace("\\", "\\\\") + "\\\\"
+                if (GPU.Length > 0)
                 {
-                    Console.WriteLine("WARNING: No GPU configured will consume more CPU resources and slow down the machine.");
-                    pythonScript = pythonScript.Replace(", device='{GPU}'", "");
+                    pythonScript = pythonScript.Replace("{device}", ", device='" + GPU + "'");
                 }
                 else
                 {
-                    pythonScript = pythonScript.Replace("{GPU}", GPU);
+                    pythonScript = pythonScript.Replace("{device}", "");
                 }
+                GlobalParameters gpA = new GlobalParameters();
+                Dictionary<string, string> AIM = new Dictionary<string, string>();
+                string[] AIModelConfiguration = new string[]
+                {
+                "AI.ReceivedTokens",
+                "AI.GPULayers",
+                "AI.MaxTokensSent",
+                "AI.Temperature",
+                "AI.Top_K",
+                "AI.Top_P",
+                "AI.Min_P",
+                "AI.Penalty",
+                "AI.Repeat_Last_N",
+                "AI.ConsumptionBatch",
+                "AI.ShowLoadTimes",
+                "AI.SimulateTyping"
+                };
+                foreach (string s in AIModelConfiguration)
+                    pythonScript = pythonScript.Replace("{"+s+"}", gpA.getSetting(s));
+
+
+                //if (string.IsNullOrEmpty(GPU))
+                //{
+                //    Console.WriteLine("WARNING: No GPU configured will consume more CPU resources and slow down the machine.");
+                //    pythonScript = pythonScript.Replace(", device='{GPU}'", "");
+                //}
+                //else
+                //{
+                //    pythonScript = pythonScript.Replace("{GPU}", GPU);
+                //}
                 string outputPythonPath = Path.Combine(baseDirectory, "ConfiguredAnalysisTrainingModel.py");
                 File.WriteAllText(outputPythonPath, pythonScript);
                 generatedFiles = ProcessFilesAndReturnGeneratedFiles(trainingPath, analysisFileLocation, 2000, analysisPrompt, columns + "\n");
@@ -402,17 +452,48 @@ namespace Case
                 string pythonScript = File.ReadAllText(pythonTemplatePath);
 
                 // Replace placeholders with actual values
-                pythonScript = pythonScript.Replace("{model}", model);
-                pythonScript = pythonScript.Replace("{threads}", threads);
-                if (string.IsNullOrEmpty(GPU))
+                string cachepath = gPA.getSetting("ModelRepository");
+                pythonScript = pythonScript.Replace("{model}", cachepath.Replace("\\", "\\\\") + "\\\\" + model); //.Replace("\\", "\\\\") + "\\\\"
+
+                if (GPU.Length > 0)
                 {
-                    Console.WriteLine("WARNING: No GPU configured will consume more CPU resources and slow down the machine.");
-                    pythonScript = pythonScript.Replace(", device='{GPU}'", "");
+                    pythonScript = pythonScript.Replace("{device}", ", device='" + GPU + "'");
                 }
                 else
                 {
-                    pythonScript = pythonScript.Replace("{GPU}", GPU);
+                    pythonScript = pythonScript.Replace("{device}", "");
                 }
+
+                GlobalParameters gpA = new GlobalParameters();
+                Dictionary<string, string> AIM = new Dictionary<string, string>();
+                string[] AIModelConfiguration = new string[]
+                {
+                "AI.ReceivedTokens",
+                "AI.GPULayers",
+                "AI.MaxTokensSent",
+                "AI.Temperature",
+                "AI.Top_K",
+                "AI.Top_P",
+                "AI.Min_P",
+                "AI.Penalty",
+                "AI.Repeat_Last_N",
+                "AI.ConsumptionBatch",
+                "AI.ShowLoadTimes",
+                "AI.SimulateTyping"
+                };
+                foreach (string s in AIModelConfiguration)
+                    pythonScript = pythonScript.Replace("{" + s + "}", gpA.getSetting(s));
+
+
+                //if (string.IsNullOrEmpty(GPU))
+                //{
+                //    Console.WriteLine("WARNING: No GPU configured will consume more CPU resources and slow down the machine.");
+                //    pythonScript = pythonScript.Replace(", device='{GPU}'", "");
+                //}
+                //else
+                //{
+                //    pythonScript = pythonScript.Replace("{GPU}", GPU);
+                //}
                 pythonScript = pythonScript.Replace("{trainingPath}", trainingPath.Replace("\\", "\\\\"));
 
                 // Define the output path for the updated script
@@ -434,22 +515,52 @@ namespace Case
         /// <returns>The initial output as a string.</returns>
         private static string ReadInitialOutputs(Process process)
         {
-            try
+            List<string> data = new List<string>();
+            string line;
+
+            while ((line = process.StandardOutput.ReadLine()) != null)
             {
-                List<string> data = new List<string>();
-                string line;
-                while ((line = process.StandardOutput.ReadLine()) != null)
+                data.Add(line);
+                break;
+            }
+            string contentsSoFar = string.Join(" ", data.ToArray());
+            if (!contentsSoFar.Contains("ML:"))
+            {
+                while ((line = process.StandardError.ReadLine()) != null)
                 {
-                    data.Add(line);
+                    data.Add("Error:" + line);
+                    data.Add(process.StandardError.ReadToEnd());
                     break;
                 }
-                return string.Join(" ", data.ToArray());
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"Error reading initial outputs: {ex.Message}");
-                return string.Empty;
+                GlobalParameters gPA = new GlobalParameters();
+                string showLoad = gPA.getSetting("AI.ShowLoadTimes");
+                if (showLoad == "True")
+                    Console.WriteLine(contentsSoFar.Replace("ML:", "") + " seconds");
             }
+            return string.Join(" ", data.ToArray());
+
+            //while ((line = process.StandardOutput.ReadLine()) != null)
+            //{
+            //    data.Add(line);
+            //    break;
+            //}
+            //string ret = string.Join(" ", data.ToArray());
+            //string allOP = process.StandardError.ReadToEnd();
+
+
+            //data.Add("|"+allOP);
+            ////Console.WriteLine(allIP);
+            //bool holder = false;
+            //return string.Join(" ", data.ToArray());
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error reading initial outputs: {ex.Message}");
+            //    return string.Empty;
+            //}
         }
 
         /// <summary>
@@ -489,6 +600,10 @@ namespace Case
             {
                 Console.WriteLine($"Error reading file response: {ex.Message}");
             }
+            GlobalParameters gPA = new GlobalParameters();
+            string showLoad = gPA.getSetting("AI.ShowLoadTimes");
+            if (showLoad == "True")
+                Console.WriteLine(rawData[0].Split('-')[3].TrimStart());
             return allLines;
         }
 
@@ -522,5 +637,129 @@ namespace Case
             }
             return allLines;
         }
+        public AIConfiguration AIConfig { get; set; } = new AIConfiguration();
+
+        public void AI_UnderTheHood()
+        {
+            Console.WriteLine("Would you like to fine-tune the AI model handler? (yes/no)");
+            string response = Console.ReadLine().Trim().ToLower();
+                
+            if (response.ToLower() == "yes")
+            {
+                GlobalParameters gpA = new GlobalParameters();
+                Dictionary<string, string> AIM = new Dictionary<string, string>();
+                string[] AIModelConfiguration = new string[]
+                {
+                "AI.ReceivedTokens",
+                "AI.GPULayers",
+                "AI.MaxTokensSent",
+                "AI.Temperature",
+                "AI.Top_K",
+                "AI.Top_P",
+                "AI.Min_P",
+                "AI.Penalty",
+                "AI.Repeat_Last_N",
+                "AI.ConsumptionBatch",
+                "AI.ShowLoadTimes",
+                "AI.SimulateTyping"
+                };
+                foreach (string s in AIModelConfiguration)
+                    AIM.Add(s, gpA.getSetting(s));
+
+                gpA.updateSettingsFile(AIModelConfiguration[0], GetUserIntInput("AI.ReceivedTokens (n_ctx): Number of tokens received.", Convert.ToInt32(AIM[AIModelConfiguration[0]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[1], GetUserIntInput("AI.GPULayers (ngl): Number of GPU layers.", Convert.ToInt32(AIM[AIModelConfiguration[1]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[2], GetUserIntInput("AI.MaxTokensSent (max_tokens): Maximum number of tokens sent.", Convert.ToInt32(AIM[AIModelConfiguration[2]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[3], GetUserDoubleInput("AI.Temperature (temp): Sampling temperature.", Convert.ToDouble(AIM[AIModelConfiguration[3]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[4], GetUserIntInput("AI.Top_K (top_k): The number of highest probability vocabulary tokens to keep for top-k filtering.", Convert.ToInt32(AIM[AIModelConfiguration[4]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[5], GetUserDoubleInput("AI.Top_P (top_p): Cumulative probability of token sequences to consider for sampling.", Convert.ToDouble(AIM[AIModelConfiguration[5]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[6], GetUserDoubleInput("AI.Min_P (min_p): Minimum cumulative probability for token sequences.", Convert.ToDouble(AIM[AIModelConfiguration[6]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[7], GetUserDoubleInput("AI.Penalty (repeat_penalty): The penalty for repeating tokens.", Convert.ToDouble(AIM[AIModelConfiguration[7]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[8], GetUserIntInput("AI.Repeat_Last_N (repeat_last_n): Number of last tokens to consider for repetition penalty.", Convert.ToInt32(AIM[AIModelConfiguration[8]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[9], GetUserIntInput("AI.ConsumptionBatch (n_batch): Batch size for consumption.", Convert.ToInt32(AIM[AIModelConfiguration[9]])).ToString());
+                gpA.updateSettingsFile(AIModelConfiguration[10], GetUserStringInput("AI.ShowLoadTimes: Display load times for model discussion and responses.", AIM[AIModelConfiguration[10]]));
+                gpA.updateSettingsFile(AIModelConfiguration[11], GetUserStringInput("AI.SimulateType: Iteratively display responses character by character", AIM[AIModelConfiguration[11]]));
+            }
+            else
+            {
+                Console.WriteLine("Defaults applied to the AI Model Handler.");
+            }
+        }
+
+        private int GetUserIntInput(string prompt, int defaultValue)
+        {
+            while (true)
+            {
+                Console.WriteLine($"{prompt} (Default: {defaultValue})");
+                string input = Console.ReadLine().Trim();
+
+                if (string.IsNullOrEmpty(input))
+                {
+                    return defaultValue;
+                }
+                else if (int.TryParse(input, out int value))
+                {
+                    return value;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input. Please enter a valid number.");
+                }
+            }
+        }
+        private string GetUserStringInput(string prompt, string defaultValue)
+        {
+            while (true)
+            {
+                Console.WriteLine($"{prompt} (Default: {defaultValue})");
+                string input = Console.ReadLine().Trim();
+
+                if (string.IsNullOrEmpty(input))
+                {
+                    return defaultValue;
+                }
+                else if (input == "True" || input == "False")
+                {
+                    return input;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input. Please enter 'True' or 'False'.");
+                }
+            }
+        }
+        private double GetUserDoubleInput(string prompt, double defaultValue)
+        {
+            while (true)
+            {
+                Console.WriteLine($"{prompt} (Default: {defaultValue})");
+                string input = Console.ReadLine().Trim();
+
+                if (string.IsNullOrEmpty(input))
+                {
+                    return defaultValue;
+                }
+                else if (double.TryParse(input, out double value))
+                {
+                    return value;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input. Please enter a valid number.");
+                }
+            }
+        }
+    }
+    public class AIConfiguration
+    {
+        public int ReceivedTokens { get; set; } = 2048;
+        public int GPULayers { get; set; } = 100;
+        public int MaxTokensSent { get; set; } = 4096;
+        public double Temperature { get; set; } = 0.7;
+        public int TopK { get; set; } = 40;
+        public double TopP { get; set; } = 0.4;
+        public double MinP { get; set; } = 0.0;
+        public double Penalty { get; set; } = 1.18;
+        public int RepeatLastN { get; set; } = 64;
+        public int ConsumptionBatch { get; set; } = 128;
     }
 }
