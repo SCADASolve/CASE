@@ -32,11 +32,6 @@ dotnet build
 
 ### Commands
 
-#### `-command <sub-command> [options]`
-
-Manages RPA commands.
-
-- **Sub-commands:**
   - `-talk`: Initiates the Conversational Agent via Python.
   - `-analyze`: Use the Generative AI to analyze files and databases.
   - `-create`: Starts the interactive creation process.
@@ -75,6 +70,7 @@ Analyzes the specified data.
       ```sh
       -analyze -database "SELECT * FROM table" "analyze this query"
       ```
+#### `-command <sub-command> [options]`
 
 #### `-execute "<command>"`
 
